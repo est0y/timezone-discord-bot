@@ -3,10 +3,12 @@ package human.est0y.timezoneDiscordBot;
 import human.est0y.timezoneDiscordBot.services.TimeExtractor;
 import human.est0y.timezoneDiscordBot.services.TimePrinter;
 import human.est0y.timezoneDiscordBot.services.TimeRoleFinder;
+import human.est0y.timezoneDiscordBot.services.commands.CommandManager;
 import human.est0y.timezoneDiscordBot.services.data.GuildSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +31,8 @@ public class Bot extends ListenerAdapter {
 
     private final TimePrinter timePrinter;
 
+    private final CommandManager commandManager;
+
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.getAuthor().isBot()) {
@@ -41,5 +45,10 @@ public class Bot extends ListenerAdapter {
         var userTimeZone = guildSettings.getZoneIdByRoleIds().get(timeRole.getIdLong());
         var userZonedDateTime = ZonedDateTime.of(LocalDate.now(), memberLocalTime, ZoneId.of(userTimeZone));
         timePrinter.print(event.getMessage(), userZonedDateTime, guildSettings);
+    }
+
+    @Override
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        commandManager.getCommandByName(event.getName()).execute(event);
     }
 }
