@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -68,5 +69,21 @@ public class Bot extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         commandManager.getCommandByName(event.getName()).execute(event);
+    }
+
+    @Override
+    public void onStringSelectInteraction(@NotNull StringSelectInteractionEvent event) {
+        if (!event.getComponentId().startsWith("menu:city")) {
+            return;
+        }
+        event.getMessage().delete().queue();
+        long timeRole = Long.parseLong(event.getComponentId().replace("menu:city|roleId:", ""));
+        var roleName = event.getJDA().getRoleById(timeRole).getName();
+        var timeZone = event.getValues().get(0);
+        var guildSetting = guildSettingsService.findById(event.getGuild().getIdLong()).orElseThrow();
+        guildSetting.getZoneIdByRoleIds().put(timeRole, timeZone);
+        event.reply(String.format("Added role @%s with time zones %s", roleName, timeZone))
+                .queue(h -> guildSettingsService.save(guildSetting));
+
     }
 }
