@@ -1,0 +1,3 @@
+app:
+  bot:
+    token: ${SECRET_KEY}
