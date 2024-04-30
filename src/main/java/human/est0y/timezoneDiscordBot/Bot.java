@@ -1,5 +1,6 @@
 package human.est0y.timezoneDiscordBot;
 
+import human.est0y.timezoneDiscordBot.domain.GuildSettings;
 import human.est0y.timezoneDiscordBot.services.TimeExtractor;
 import human.est0y.timezoneDiscordBot.services.TimePrinter;
 import human.est0y.timezoneDiscordBot.services.TimeRoleFinder;
@@ -8,8 +9,10 @@ import human.est0y.timezoneDiscordBot.services.data.GuildSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 
 @Slf4j
 @Component
@@ -32,6 +36,20 @@ public class Bot extends ListenerAdapter {
     private final TimePrinter timePrinter;
 
     private final CommandManager commandManager;
+
+    @Override
+    public void onReady(@NotNull ReadyEvent event) {
+        var guilds = event.getJDA().getGuilds();
+        if (guildSettingsService.findById(guilds.get(0).getIdLong()).isEmpty()) {
+            guilds.forEach(g -> guildSettingsService.save(new GuildSettings(g.getIdLong(), new HashMap<>())));
+        }
+    }
+
+    @Override
+    public void onGuildJoin(@NotNull GuildJoinEvent event) {
+        guildSettingsService.save(new GuildSettings(event.getGuild().getIdLong(), new HashMap<>()));
+    }
+
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
