@@ -6,7 +6,6 @@ import human.est0y.timezoneDiscordBot.services.TimePrinter;
 import human.est0y.timezoneDiscordBot.services.TimeRoleFinder;
 import human.est0y.timezoneDiscordBot.services.commands.CommandManager;
 import human.est0y.timezoneDiscordBot.services.data.GuildSettingsService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
@@ -15,7 +14,9 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -25,7 +26,7 @@ import java.util.HashMap;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
+
 public class Bot extends ListenerAdapter {
 
     private final TimeExtractor timeExtractor;
@@ -37,6 +38,17 @@ public class Bot extends ListenerAdapter {
     private final TimePrinter timePrinter;
 
     private final CommandManager commandManager;
+
+    public Bot(TimeExtractor timeExtractor, TimeRoleFinder timeRoleFinder,
+               GuildSettingsService guildSettingsService,
+               @Qualifier("TimeStampPrinter") TimePrinter timePrinter,
+               CommandManager commandManager) {
+        this.timeExtractor = timeExtractor;
+        this.timeRoleFinder = timeRoleFinder;
+        this.guildSettingsService = guildSettingsService;
+        this.timePrinter = timePrinter;
+        this.commandManager = commandManager;
+    }
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
@@ -58,12 +70,20 @@ public class Bot extends ListenerAdapter {
             return;
         }
         var memberLocalTime = timeExtractor.extract(event.getMessage().getContentRaw()).orElseThrow();
+        long timeStamp = memberLocalTime.toSecondOfDay();
+        event.getMessage().reply(MessageCreateData.fromContent("<t:" + timeStamp + ":t>")).queue();
         var guild = event.getGuild();
         var guildSettings = guildSettingsService.findById(guild.getIdLong()).orElseThrow();
         Role timeRole = timeRoleFinder.getTimeRole(event.getMember(), guildSettings);
         var userTimeZone = guildSettings.getZoneIdByRoleIds().get(timeRole.getIdLong());
-        var userZonedDateTime = ZonedDateTime.of(LocalDate.now(), memberLocalTime, ZoneId.of(userTimeZone));
-        timePrinter.print(event.getMessage(), userZonedDateTime, guildSettings);
+        var nowDate = LocalDate.now();
+        var userZonedDateTime = ZonedDateTime.of(nowDate, memberLocalTime, ZoneId.of(userTimeZone));
+        ZonedDateTime currentZonedDateTime = ZonedDateTime.now(ZoneId.of(userTimeZone));
+        if (userZonedDateTime.isBefore(currentZonedDateTime)) {
+            nowDate = nowDate.plusDays(1);
+        }
+        timePrinter.print(event.getMessage(), ZonedDateTime.of(nowDate, memberLocalTime, ZoneId.of(userTimeZone)),
+                guildSettings);
     }
 
     @Override
