@@ -14,7 +14,6 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -70,8 +69,6 @@ public class Bot extends ListenerAdapter {
             return;
         }
         var memberLocalTime = timeExtractor.extract(event.getMessage().getContentRaw()).orElseThrow();
-        long timeStamp = memberLocalTime.toSecondOfDay();
-        event.getMessage().reply(MessageCreateData.fromContent("<t:" + timeStamp + ":t>")).queue();
         var guild = event.getGuild();
         var guildSettings = guildSettingsService.findById(guild.getIdLong()).orElseThrow();
         Role timeRole = timeRoleFinder.getTimeRole(event.getMember(), guildSettings);
