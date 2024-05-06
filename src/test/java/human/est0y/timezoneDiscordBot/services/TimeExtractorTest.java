@@ -21,6 +21,24 @@ class TimeExtractorTest {
         Assertions.assertEquals(Optional.empty(), optionalTime);
 
         optionalTime = timeExtractor.extract("any 1:18 any");
-        Assertions.assertEquals(Optional.empty(), optionalTime);
+        Assertions.assertEquals(LocalTime.of(1, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any1 18any");
+        Assertions.assertEquals(LocalTime.of(1, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any1.18any");
+        Assertions.assertEquals(LocalTime.of(1, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any 12 18 any");
+        Assertions.assertEquals(LocalTime.of(12, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any12 18any");
+        Assertions.assertEquals(LocalTime.of(12, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any12.18any");
+        Assertions.assertEquals(LocalTime.of(12, 18), optionalTime.orElseThrow());
+
+        optionalTime = timeExtractor.extract("any 12.18any");
+        Assertions.assertEquals(LocalTime.of(12, 18), optionalTime.orElseThrow());
     }
 }
